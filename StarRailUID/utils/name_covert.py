@@ -13,8 +13,9 @@ async def name_to_relic_set_id(name: str):
 
 async def name_to_avatar_id(name: str) -> str:
     avatar_id = ""
+    name_lower = name.lower()
     for i in SR_MAP_PATH.avatarId2Name:
-        if SR_MAP_PATH.avatarId2Name[i] == name:
+        if SR_MAP_PATH.avatarId2Name[i].lower() == name_lower:
             avatar_id = i
             break
     return avatar_id
@@ -33,8 +34,9 @@ async def alias_to_char_id(char_name: str) -> Optional[str]:
 
 
 async def alias_to_char_name(char_name: str) -> str:
+    char_lower = char_name.lower()
     for i in model.CharAlias["characters"]:
-        if char_name in model.CharAlias["characters"][i]:
+        if any(char_lower == a.lower() for a in model.CharAlias["characters"][i]):
             return model.CharAlias["characters"][i][0]
     return char_name
 

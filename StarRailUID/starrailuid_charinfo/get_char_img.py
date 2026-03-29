@@ -241,8 +241,11 @@ async def get_char_data_with_source(
     for char in char_id_list:
         charname = SR_MAP_PATH.avatarId2Name[str(char)]
         charname_list.append(charname)
-    if char_name in charname_list:
-        return chars[char_id_list[charname_list.index(char_name)]], actual_source
+    # Case-insensitive match for English character names (e.g. saber -> Saber)
+    charname_lower = [n.lower() for n in charname_list]
+    if char_name.lower() in charname_lower:
+        idx = charname_lower.index(char_name.lower())
+        return chars[char_id_list[idx]], actual_source
     return CHAR_HINT.format(char_name, char_name)
 
 

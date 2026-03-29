@@ -15,7 +15,8 @@ sv_get_info = SV("sr查询信息")
 
 @sv_get_info.on_command(("uid", "查询"))
 async def send_role_info(bot: Bot, ev: Event):
-    name = "".join(re.findall("[\u4e00-\u9fa5]", ev.text))
+    # Skip if text contains a character name (Chinese or English)
+    name = "".join(re.findall(r"[\u4e00-\u9fa5a-zA-Z]", ev.text))
     if name:
         return None
 
