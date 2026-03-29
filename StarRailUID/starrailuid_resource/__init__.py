@@ -26,15 +26,23 @@ def _get_data_file_path(file_name: str) -> Path:
     return srdc_update.EXCEL_DIR / file_name
 
 
+# Compatibility: LOCAL_VERSION_FILE was removed in starrail-damage-cal >= 4.1.2
+_LOCAL_VERSION_FILE = getattr(srdc_update, "LOCAL_VERSION_FILE", None)
+
+
 def _get_invalid_data_files() -> list[str]:
-    if not srdc_update.LOCAL_VERSION_FILE.exists():
-        return [str(srdc_update.LOCAL_VERSION_FILE.name)]
+    if _LOCAL_VERSION_FILE is None:
+        # Newer starrail-damage-cal handles versioning internally
+        return []
+
+    if not _LOCAL_VERSION_FILE.exists():
+        return [str(_LOCAL_VERSION_FILE.name)]
 
     try:
-        version_data = json.loads(srdc_update.LOCAL_VERSION_FILE.read_text(encoding="utf-8"))
+        version_data = json.loads(_LOCAL_VERSION_FILE.read_text(encoding="utf-8"))
     except Exception:
         logger.exception("读取星铁数据版本文件失败")
-        return [str(srdc_update.LOCAL_VERSION_FILE.name)]
+        return [str(_LOCAL_VERSION_FILE.name)]
 
     invalid_files: list[str] = []
     files = version_data.get("files", {})
@@ -60,8 +68,10 @@ def _get_invalid_data_files() -> list[str]:
 
 
 def _invalidate_data_version_file() -> None:
+    if _LOCAL_VERSION_FILE is None:
+        return
     try:
-        srdc_update.LOCAL_VERSION_FILE.unlink(missing_ok=True)
+        _LOCAL_VERSION_FILE.unlink(missing_ok=True)
     except Exception:
         logger.exception("清理星铁数据版本文件失败")
 
