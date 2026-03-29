@@ -72,14 +72,14 @@ async def _draw_card_1(
     ev: Event, sr_uid: str, role_basic_info: RoleBasicInfo, stats: Stats
 ) -> Image.Image:
     # 名称
-    nickname = role_basic_info.nickname
+    nickname = role_basic_info.nickname if hasattr(role_basic_info, "nickname") else role_basic_info["nickname"]
 
     # 基本状态
-    active_days = stats.active_days
+    active_days = stats.active_days if hasattr(stats, "active_days") else stats.get("active_days", 0)
     avater_num = stats.avatar_num
     achievement_num = stats.achievement_num
     chest_num = stats.chest_num
-    level = role_basic_info.level
+    level = role_basic_info.level if hasattr(role_basic_info, "level") else role_basic_info["level"]
 
     # 忘却之庭
     abyss_process = stats.abyss_process
