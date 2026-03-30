@@ -96,6 +96,8 @@ async def get_char_args(
     # 希儿带于夜色中换1000xxxx6希儿头
     msg_list = msg.split("换")
     for index, part in enumerate(msg_list):
+        if not part:
+            continue
         changeuid = await get_part_uid(part, uid)
         if changeuid is None:
             return "UID不正确噢~"

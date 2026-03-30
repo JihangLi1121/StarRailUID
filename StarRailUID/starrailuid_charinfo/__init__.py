@@ -1,6 +1,7 @@
+import json
 import re
 from pathlib import Path
-from typing import Tuple, cast
+from typing import List, Tuple, cast
 
 from gsuid_core.bot import Bot
 from gsuid_core.logger import logger
@@ -15,10 +16,56 @@ from starrail_damage_cal.map import SR_MAP_PATH
 
 from ..starrailuid_config.sr_config import get_panel_source
 from ..utils.error_reply import UID_HINT
+from ..utils.name_covert import alias_to_char_name, name_to_avatar_id
 from ..utils.resource.RESOURCE_PATH import TEMP_PATH
 from .get_char_img import draw_char_info_img
 from .panel_data import PANEL_SOURCE_CONFIG_KEY, PANEL_SOURCE_HINT
 from .to_card import api_to_card
+
+# Load path data for LC weapon selector
+_PATH_DATA_FILE = Path(__file__).parent.parent / "utils" / "excel" / "path_data.json"
+_PATH_DATA = {}
+if _PATH_DATA_FILE.exists():
+    with open(_PATH_DATA_FILE, encoding="utf-8") as f:
+        _PATH_DATA = json.load(f)
+
+
+def _get_weapon_buttons(char_name: str) -> List[Button]:
+    """Get compatible Light Cone buttons for a character's path."""
+    if not _PATH_DATA:
+        return [Button("🔄更换武器", f"sr查询{char_name}换", action=2)]
+
+    char_paths = _PATH_DATA.get("char_paths", {})
+    path_to_lcs = _PATH_DATA.get("path_to_lcs", {})
+
+    # Resolve character name to ID
+    char_id = ""
+    for cid, cname in SR_MAP_PATH.avatarId2Name.items():
+        if cname.lower() == char_name.lower():
+            char_id = cid
+            break
+
+    if not char_id or char_id not in char_paths:
+        return [Button("🔄更换武器", f"sr查询{char_name}换", action=2)]
+
+    path = char_paths[char_id]
+    lcs = path_to_lcs.get(path, [])
+    if not lcs:
+        return [Button("🔄更换武器", f"sr查询{char_name}换", action=2)]
+
+    # Build buttons: 5★ first, then 4★, max 23 (Discord limit 25 - 2 for other buttons)
+    buttons = []
+    for lc_info in lcs[:23]:
+        lcid = lc_info["id"]
+        lc_name = SR_MAP_PATH.EquipmentID2Name.get(lcid, "")
+        if not lc_name:
+            continue
+        star = "⭐" if lc_info.get("rarity", 4) >= 5 else ""
+        buttons.append(
+            Button(f"{star}{lc_name}", f"sr查询{char_name}换{lc_name}")
+        )
+
+    return buttons if buttons else [Button("🔄更换武器", f"sr查询{char_name}换", action=2)]
 
 sv_char_info_config = SV("sr面板设置", pm=2)
 sv_get_char_info = SV("sr面板查询", priority=10)
@@ -47,27 +94,16 @@ async def send_char_info(bot: Bot, ev: Event):
             img = await convert_img(cast(Image.Image, im[0]))
         else:
             img = str(im[0])
-        await bot.send_option(
-            img,
-            [
-                Button("🔄更换武器", f"sr查询{name}换", action=2),
-                Button("⏫提高命座", f"sr查询六魂{name}", action=2),
-            ],
-        )
+        lc_buttons = _get_weapon_buttons(name)
+        await bot.send_option(img, lc_buttons)
         if im[1]:
             with Path.open(TEMP_PATH / f"{ev.msg_id}.jpg", "wb") as f:
                 f.write(cast(bytes, im[1]))
     elif isinstance(im, Image.Image):
         await bot.send(await convert_img(im))
     elif isinstance(im, bytes):
-        # await bot.send(im)
-        await bot.send_option(
-            im,
-            [
-                Button("🔄更换武器", f"sr查询{name}换", action=2),
-                Button("⏫提高命座", f"sr查询六魂{name}", action=2),
-            ],
-        )
+        lc_buttons = _get_weapon_buttons(name)
+        await bot.send_option(im, lc_buttons)
     elif im is None:
         return
     else:
