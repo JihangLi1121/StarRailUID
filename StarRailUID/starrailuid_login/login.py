@@ -141,14 +141,12 @@ async def page_login(bot: Bot, ev: Event):
                     )
 
                 if result.get("status") == "success":
-                    cache.delete(user_token)
                     msg = result.get("result_msg", "登录成功!")
                     return await bot.send(
                         f"{GAME_TITLE} {msg}",
                         at_sender=at_sender,
                     )
                 elif result.get("status") == "error":
-                    cache.delete(user_token)
                     msg = result.get("result_msg", "登录失败!")
                     return await bot.send(
                         f"{GAME_TITLE} {msg}",

@@ -499,7 +499,7 @@ async def get_char(
 
         equipment_promotion_base = None
         for equipment in srdcmodel.EquipmentPromotionConfig:
-            if equipment.EquipmentID == str(equipmentid) and equipment.Promotion == 6:
+            if equipment.EquipmentID == int(equipmentid) and equipment.Promotion == 6:
                 equipment_promotion_base = equipment
                 break
         if not equipment_promotion_base:
